@@ -1,0 +1,303 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <meta http-equiv="content-type" content="text/html; charset=UTF-8"/>
+        <title>Folding App V1.0</title>
+        <link id="sbi-style" type="text/css" rel="stylesheet" href="Animation_files/sbi.css"/>
+        <style>
+            body { 
+                font-family: Arial;
+                color: #ff6a00;
+                background-color: #000;
+                margin: 0px;
+                overflow: hidden; 
+            }
+            .main-div {
+                position: fixed;
+                z-index: 1;
+                top: 0;
+                right: 0;
+                bottom: 0;
+                left: 0;
+            }
+
+            /* md */
+            @media (min-width: 800px) {
+                #barparrent {
+                    position: fixed;
+                    z-index: 2;
+                    right: 0;
+                    left: 0;
+                    bottom: 50px;
+                    width: 40%;
+                    margin: 0 auto;
+                }
+                #range {
+                    float: left;
+                    width: 80%;
+                }
+                #Button {
+                    float: right;
+                    width: 15%;
+                }
+            }
+
+            /* sm */
+            @media (max-width: 799px) {
+                #barparrent {
+                    position: fixed;
+                    z-index: 2;
+                    right: 0;
+                    left: 0;
+                    bottom: 50px;
+                    width: 70%;
+                    margin: 0 auto;
+                }
+                #range {
+                    float: left;
+                    width: 65%;
+                }
+                #Button {
+                    float: right;
+                    width: 30%;
+                }
+            }
+        </style>
+    </head>
+    <body>
+        <div id="barparrent">
+            <input id="range" min="0" max="55" value="0" onchange="Seek(this.value)" type="range"/>
+            <button onclick="PlayButton()" id="Button" type="button">Play</button>
+        </div>
+        <script src="Animation_files/three.js"></script>
+        <script src="Animation_files/OrbitControls.js"></script>
+        <script src="Animation_files/TrackballControls.js"></script>
+        <script src="Animation_files/JDLoader.js"></script>
+        <script>
+                // Html query string grabber------------------------
+                function getParameterByName(name, url) {
+                    if (!url)
+                        url = window.location.href;
+                    name = name.replace(/[\[\]]/g, "\\$&");
+                    var regex = new RegExp("[?&]" + name + "(=([^&#]*)|&|#|$)"),
+                            results = regex.exec(url);
+                    if (!results)
+                        return null;
+                    if (!results[2])
+                        return '';
+                    return decodeURIComponent(results[2].replace(/\+/g, " "));
+                }
+                
+                qModel = getParameterByName('model');
+                var x = parseFloat(getParameterByName('x'));
+                var y = parseFloat(getParameterByName('y'));
+                var z = parseFloat(getParameterByName('z'));
+                //---------------------------------------------------
+
+                //var meshes = [];
+                var mixers = [], hemisphereLight, camera, scene, renderer, controls;
+
+                var materials = [];
+                var clock = new THREE.Clock;
+                var clips = [];
+                var play;
+                var group;
+                var pointlight;
+                var animspeed = .1;
+                init(x, y, z);
+                animate();
+
+                function rgb2hex(rgb) {
+                    rgb = rgb.match(/^rgba?[\s+]?\([\s+]?(\d+)[\s+]?,[\s+]?(\d+)[\s+]?,[\s+]?(\d+)[\s+]?/i);
+                    return (rgb && rgb.length === 4) ? "0x" +
+                            ("0" + parseInt(rgb[1], 10).toString(16)).slice(-2) +
+                            ("0" + parseInt(rgb[2], 10).toString(16)).slice(-2) +
+                            ("0" + parseInt(rgb[3], 10).toString(16)).slice(-2) : '';
+                }
+                function init(x, y, z) {
+                    container = document.createElement('div');
+                    container.setAttribute('class', 'main-div');
+
+                    document.body.appendChild(container);
+                    scene = new THREE.Scene();
+                    scene.background = new THREE.Color(0xffffff);
+
+
+                    //hemisphereLight = new THREE.HemisphereLight(0xffffff, 0x222222, 0.9); //( skyColor, groundColor, intensity )
+                    //hemisphereLight.position.set(0, 10000, 0);
+                    //scene.add(hemisphereLight);
+
+                    scene.add(new THREE.AmbientLight(0x161616, 1));
+
+                    renderer = new THREE.WebGLRenderer({antialias: true});
+                    renderer.setPixelRatio(window.devicePixelRatio);
+                    renderer.setSize(window.innerWidth, window.innerHeight);
+                    container.appendChild(renderer.domElement);
+
+                    window.addEventListener('resize', onWindowResize, false);
+
+                    var loader = new THREE.JDLoader();
+                    loader.load('models/' + qModel + '.JD', function (data) {
+
+                        group = new THREE.Object3D();
+
+
+                        for (i = 0; i < data.materials.length; i++) {
+                            data.materials[i].side = THREE.DoubleSide;
+                        }
+
+                        materials = data.materials;
+                        
+                        if (materials[0]) {
+                            var str_rgb = materials[0].color.getStyle();
+                            materials[0].color.setHex(rgb2hex(str_rgb));
+                        }
+                        if (materials[1]) {
+                            var str_rgb = materials[1].color.getStyle();
+                            var c = str_rgb.substr(4, str_rgb.length - 5).split(',');
+                            materials[1].color.setRGB(c[0], c[1], c[2]);
+                        }
+                        if (materials[2]) {
+                            var str_rgb = materials[2].color.getStyle();
+                            var c = str_rgb.substr(4, str_rgb.length - 5).split(',');
+                            materials[2].color.setRGB(c[0], c[1], c[2]);
+                        }
+
+                        for (var i = 0; i < data.geometries.length; ++i) {
+
+                            var mesh = new THREE.SkinnedMesh(data.geometries[i], materials);
+                            //mesh.material.color = 0xffffff;
+                            //meshes.push(mesh); //my comment
+                            group.add(mesh);
+
+                            if (mesh.geometry.animations) {
+                                var mixer = new THREE.AnimationMixer(mesh);
+                                mixers.push(mixer);
+                                clips.push(mesh.geometry.animations[0]);
+                                var action = mixer.clipAction(mesh.geometry.animations[0]);
+                                action.play(false);
+                                action.clampWhenFinished = true;
+                                play = false;
+
+                            }
+                        }
+
+                        scene.add(group);
+                        mixers[0].addEventListener('loop', Finished);
+                        camera = new THREE.PerspectiveCamera(70, window.innerWidth / window.innerHeight, 1, 10 * data.boundingSphere.radius);
+                        camera.position.z = group.position.z + 2.5 * data.boundingSphere.radius;//data.boundingSphere.center.z + 2.5 * data.boundingSphere.radius;
+                        
+                        camera.lookAt(group.position);
+                        // pointLight = new THREE.PointLight( 0xffffff );
+                        // pointLight.position.set(group.x,group.y + 100,group.z);
+                        //group.add(pointLight);
+                        scene.add(camera);  //mainLight.position.copy(camera.position);
+                        camera.add(new THREE.DirectionalLight(0xFFFFFF, 1));
+                        if (!controls)
+                            controls = new THREE.TrackballControls(camera, renderer.domElement);
+                        //controls = new THREE.OrbitControls(camera, renderer.domElement);
+                        //controls.target.copy(data.boundingSphere.center);
+                        controls.target.copy(group.position);
+                        //console.log(controls.minDistance + "  " + controls.maxDistance );
+
+                        controls.minDistance = 100;
+                        controls.maxDistance = 300;
+
+                        controls.noPan = true;
+                        controls.enableDamping = true;
+                        controls.dampingFactor = 0.10;
+                        controls.enableZoom = true;
+                        controls.rotateSpeed = 4;
+                        controls.zoomSpeed = 0.5;
+                        controls.panSpeed = 1;
+                        //•unlock the polar angle limits (for the contoller)
+
+                        InitRot(group, x, y, z);
+
+                    });
+
+
+                    /*
+                     // create a directional light
+                     pointLight = new THREE.DirectionalLight(0xeeeeee,0.80);
+                     pointlight.position.x = group.position.x;
+                     pointlight.position.z = group.position.z;
+                     pointlight.position.y = group.position.y + 400;
+                     scene.add(pointlight);
+                     */
+
+                }
+                function InitRot(temp, x, y, z) {
+                    temp.rotation.x += x / 180 * Math.PI;
+                    temp.rotation.y += y / 180 * Math.PI;
+                    temp.rotation.z += z / 180 * Math.PI;
+                }
+                function animate() {
+                    var delta = clock.getDelta();
+                    //if(mixers[0])
+
+                    for (var i = 0; i < mixers.length; ++i) {
+                        // console.log((mixers[i].existingAction (clips[i]).time / clips[i].duration) * 100);
+                        // console.log(clips[i].duration);
+                        if (play && (mixers[i].existingAction(clips[i]).time / clips[i].duration) * 100 < 55) {
+                            mixers[i].update(delta * animspeed);
+                            var percent = (mixers[i].existingAction(clips[i]).time / clips[i].duration);
+                            document.getElementById("range").value = percent * 100;
+                        }
+                        else if (lastVal != document.getElementById("range").value && (mixers[i].existingAction(clips[i]).time / clips[i].duration) < 55) {
+
+                            mixers[i].existingAction(clips[i]).time = document.getElementById("range").value / 100 * clips[i].duration;
+                            mixers[i].update(delta);
+                        }
+                    }
+
+                    lastVal = document.getElementById("range").value;
+                    if (controls)
+                        controls.update();
+
+                    if (camera)
+                        renderer.render(scene, camera);
+
+                    requestAnimationFrame(animate);
+                }
+                function onWindowResize() {
+                    if (camera) {
+                        camera.aspect = window.innerWidth / window.innerHeight;
+                        camera.updateProjectionMatrix();
+                    }
+                    renderer.setSize(window.innerWidth, window.innerHeight);
+                }
+                function Seek(value) {
+                    if (play)
+                        PlayButton();
+                }
+                function RotateSpeed(s) {
+                    contols.rotateSpeed = s;
+
+                }
+                function AnimateSpeed(s) {
+                    animspeed = s;
+                }
+                function PlayButton() {
+                    if (play) {
+                        play = false;
+                        document.getElementById("Button").innerHTML = "Play";
+
+                    }
+                    else {
+                        play = true;
+                        document.getElementById("Button").innerHTML = "Pause";
+
+                    }
+                }
+                function Finished(e) {
+                    if (play) {
+                        console.log("finished");
+                        PlayButton();
+                    }
+                }
+        </script>
+    </body>
+</html>
