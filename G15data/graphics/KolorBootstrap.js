@@ -214,7 +214,7 @@ function eventKrpanoLoaded () {
 	
 	if (krpanoLoaded) { return false; }
 	
-	ktools.I18N.getInstance().initLanguage('en', crossDomainTargetUrl+'Image2data/Image2_messages_','.xml');
+	ktools.I18N.getInstance().initLanguage('en', crossDomainTargetUrl+'G15data/G15_messages_','.xml');
 	krpanoLoaded = true;
 	
 	
@@ -252,8 +252,8 @@ function addKolorFloorPlan(pPlugID, pContent)
 {
 	if(typeof ktools.KolorPluginList.getInstance().getPlugin(pPlugID) == "undefined")
 	{
-		var kolorFloorPlanCSS = new ktools.CssStyle("KolorFloorPlanCSS", crossDomainTargetUrl+"Image2data/graphics/KolorFloorPlan/kolorFloorPlan.css");
-		var kolorFloorPlanJS = new ktools.Script("KolorFloorPlanJS", crossDomainTargetUrl+"Image2data/graphics/KolorFloorPlan/KolorFloorPlan.min.js", [], true);
+		var kolorFloorPlanCSS = new ktools.CssStyle("KolorFloorPlanCSS", crossDomainTargetUrl+"G15data/graphics/KolorFloorPlan/kolorFloorPlan.css");
+		var kolorFloorPlanJS = new ktools.Script("KolorFloorPlanJS", crossDomainTargetUrl+"G15data/graphics/KolorFloorPlan/KolorFloorPlan.min.js", [], true);
 		var kolorFloorPlanPlugin = new ktools.KolorPlugin(pPlugID);
 		kolorFloorPlanPlugin.addScript(kolorFloorPlanJS);
 		kolorFloorPlanPlugin.addCss(kolorFloorPlanCSS);
@@ -366,7 +366,7 @@ function showKolorFloorPlan(pPlugID, pContent)
 		kolorFloorPlan.setKrpanoEngine(getKrPanoInstance());
 		
 		//set url for images
-		kolorFloorPlan.setGraphicsUrl(crossDomainTargetUrl+"Image2data/graphics/"+pPlugID.toLowerCase()+"/");
+		kolorFloorPlan.setGraphicsUrl(crossDomainTargetUrl+"G15data/graphics/"+pPlugID.toLowerCase()+"/");
 		
 		//KolorFloorPlan is now ready
 		kolorFloorPlan.setReady(true);
@@ -388,8 +388,8 @@ function addKolorArea(pPlugID)
 {
 	if(typeof ktools.KolorPluginList.getInstance().getPlugin(pPlugID) == "undefined")
 	{
-		var kolorAreaCSS = new ktools.CssStyle("KolorAreaCSS", crossDomainTargetUrl+"Image2data/graphics/KolorArea/kolorArea.css");
-		var kolorAreaJS = new ktools.Script("KolorAreaJS", crossDomainTargetUrl+"Image2data/graphics/KolorArea/KolorArea.min.js", [], true);
+		var kolorAreaCSS = new ktools.CssStyle("KolorAreaCSS", crossDomainTargetUrl+"G15data/graphics/KolorArea/kolorArea.css");
+		var kolorAreaJS = new ktools.Script("KolorAreaJS", crossDomainTargetUrl+"G15data/graphics/KolorArea/KolorArea.min.js", [], true);
 		var kolorAreaPlugin = new ktools.KolorPlugin(pPlugID);
 		kolorAreaPlugin.addScript(kolorAreaJS);
 		kolorAreaPlugin.addCss(kolorAreaCSS);
